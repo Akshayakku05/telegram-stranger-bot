@@ -4,7 +4,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, fil
 
 # ---------------- TOKEN ----------------
 require('dotenv').config();
-BOT_TOKEN = process.env.BOT_TOKEN
+TOKEN = process.env.BOT_TOKEN
 
 # ---------------- DATA ----------------
 waiting_users = []
