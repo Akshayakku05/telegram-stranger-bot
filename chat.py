@@ -165,8 +165,6 @@ def cleanup(user_id):
         waiting_users.remove(user_id)
 
 # ---------------- MAIN ----------------
-import asyncio
-
 async def main():
     if not TOKEN:
         print("❌ BOT_TOKEN not found! Set it in environment variables.")
@@ -184,14 +182,13 @@ async def main():
 
     print("🤖 Bot is running...")
 
-    # ✅ FIX for Python 3.14
     await app.initialize()
     await app.start()
-    await app.updater.start_polling()
 
-    # keep bot alive forever
-    await asyncio.Event().wait()
+    # ✅ Correct polling for Python 3.14
+    await app.run_polling(close_loop=False)
 
 
 if __name__ == "__main__":
+    import asyncio
     asyncio.run(main())
