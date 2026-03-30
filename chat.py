@@ -1,13 +1,9 @@
 import os
-import asyncio
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
 # ---------------- TOKEN ----------------
-#from dotenv import load_dotenv
-#load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
-
 
 # ---------------- DATA ----------------
 waiting_users = []
@@ -48,35 +44,33 @@ async def find_stranger(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⏳ Still waiting for a partner...")
         return
 
-    if waiting_users:
-        partner = waiting_users.pop(0)
+    # Try to find a valid partner
+    partner = None
+    while waiting_users:
+        temp = waiting_users.pop(0)
+        if temp not in active_chats and temp != user_id:
+            partner = temp
+            break
 
-        while partner in active_chats:
-            if not waiting_users:
-                break
-            partner = waiting_users.pop(0)
+    if partner:
+        active_chats[user_id] = partner
+        active_chats[partner] = user_id
 
-        if partner != user_id:
-            active_chats[user_id] = partner
-            active_chats[partner] = user_id
-
-            try:
-                await context.bot.send_message(
-                    user_id,
-                    "✅ Connected! Say hi 👋",
-                    reply_markup=get_chat_keyboard()
-                )
-                await context.bot.send_message(
-                    partner,
-                    "✅ Connected! Say hi 👋",
-                    reply_markup=get_chat_keyboard()
-                )
-            except:
-                cleanup(user_id)
-                cleanup(partner)
-        else:
-            waiting_users.append(user_id)
-            await update.message.reply_text("⏳ Waiting for a stranger...")
+        try:
+            await context.bot.send_message(
+                user_id,
+                "✅ Connected! Say hi 👋",
+                reply_markup=get_chat_keyboard()
+            )
+            await context.bot.send_message(
+                partner,
+                "✅ Connected! Say hi 👋",
+                reply_markup=get_chat_keyboard()
+            )
+        except Exception as e:
+            print(f"Error: {e}")
+            cleanup(user_id)
+            cleanup(partner)
     else:
         waiting_users.append(user_id)
         await update.message.reply_text("⏳ Waiting for a stranger...")
@@ -97,8 +91,8 @@ async def next_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "❌ Stranger skipped you.",
                 reply_markup=get_idle_keyboard()
             )
-        except:
-            pass
+        except Exception as e:
+            print(f"Error: {e}")
 
     await find_stranger(update, context)
 
@@ -118,8 +112,8 @@ async def stop_chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 "❌ Stranger ended the chat.",
                 reply_markup=get_idle_keyboard()
             )
-        except:
-            pass
+        except Exception as e:
+            print(f"Error: {e}")
 
         await update.message.reply_text(
             "🛑 Chat ended.",
@@ -150,7 +144,8 @@ async def relay(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     try:
         await update.message.copy(chat_id=partner)
-    except:
+    except Exception as e:
+        print(f"Error: {e}")
         cleanup(user_id)
         cleanup(partner)
 
@@ -165,25 +160,18 @@ def cleanup(user_id):
         waiting_users.remove(user_id)
 
 # ---------------- MAIN ----------------
-async def main():
+if __name__ == "__main__":
     if not TOKEN:
         print("❌ BOT_TOKEN not found! Set it in environment variables.")
-        return
+    else:
+        app = ApplicationBuilder().token(TOKEN).build()
 
-    app = ApplicationBuilder().token(TOKEN).build()
+        app.add_handler(CommandHandler("start", start))
+        app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^🔍 Find Stranger$"), find_stranger))
+        app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^⏭ Next$"), next_chat))
+        app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^🛑 Stop$"), stop_chat))
+        app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, relay))
 
-    app.add_handler(CommandHandler("start", start))
+        print("🤖 Bot is running...")
 
-    app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^🔍 Find Stranger$"), find_stranger))
-    app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^⏭ Next$"), next_chat))
-    app.add_handler(MessageHandler(filters.TEXT & filters.Regex("^🛑 Stop$"), stop_chat))
-
-    app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, relay))
-
-    print("🤖 Bot is running...")
-
-    await app.run_polling(close_loop=False)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
+        app.run_polling()
