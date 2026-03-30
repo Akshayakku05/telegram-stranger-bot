@@ -1,4 +1,5 @@
 import os
+import asyncio
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
@@ -44,7 +45,6 @@ async def find_stranger(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("⏳ Still waiting for a partner...")
         return
 
-    # Try to find a valid partner
     partner = None
     while waiting_users:
         temp = waiting_users.pop(0)
@@ -173,5 +173,9 @@ if __name__ == "__main__":
         app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, relay))
 
         print("🤖 Bot is running...")
+
+        # ✅ FIX for Python 3.14
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
 
         app.run_polling()
