@@ -182,13 +182,8 @@ async def main():
 
     print("🤖 Bot is running...")
 
-    await app.initialize()
-    await app.start()
-
-    # ✅ Correct polling for Python 3.14
     await app.run_polling(close_loop=False)
 
 
 if __name__ == "__main__":
-    import asyncio
     asyncio.run(main())
