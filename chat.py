@@ -3,7 +3,8 @@ from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
 # ---------------- TOKEN ----------------
-TOKEN = os.getenv("8529197774:AAGoucuzL0LrZ_98kQ_iGMnKTGanUHS0NZM")
+require('dotenv').config();
+BOT_TOKEN = process.env.BOT_TOKEN
 
 # ---------------- DATA ----------------
 waiting_users = []
