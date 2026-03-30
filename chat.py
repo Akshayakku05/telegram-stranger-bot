@@ -1,10 +1,11 @@
 import os
+import asyncio
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ContextTypes
 
 # ---------------- TOKEN ----------------
-from dotenv import load_dotenv
-load_dotenv()
+#from dotenv import load_dotenv
+#load_dotenv()
 TOKEN = os.getenv("BOT_TOKEN")
 
 
@@ -164,7 +165,9 @@ def cleanup(user_id):
         waiting_users.remove(user_id)
 
 # ---------------- MAIN ----------------
-def main():
+import asyncio
+
+async def main():
     if not TOKEN:
         print("❌ BOT_TOKEN not found! Set it in environment variables.")
         return
@@ -180,7 +183,15 @@ def main():
     app.add_handler(MessageHandler(filters.ALL & ~filters.COMMAND, relay))
 
     print("🤖 Bot is running...")
-    app.run_polling()
+
+    # ✅ FIX for Python 3.14
+    await app.initialize()
+    await app.start()
+    await app.updater.start_polling()
+
+    # keep bot alive forever
+    await asyncio.Event().wait()
+
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
